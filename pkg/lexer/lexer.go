@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+// the lexer takes the input and converts it into tokens
 package lexer
 
 import (
@@ -23,27 +24,35 @@ import (
 type TokenType string
 
 const (
-	IDENT     TokenType = "IDENT"
-	KEYWORD   TokenType = "KEYWORD"
-	STRING    TokenType = "STRING"
-	INT       TokenType = "INT"
-	FLOAT     TokenType = "FLOAT"
-	BOOL      TokenType = "BOOL"
-	LBRACE    TokenType = "LBRACE"
-	RBRACE    TokenType = "RBRACE"
-	LPAREN    TokenType = "LPAREN"
-	RPAREN    TokenType = "RPAREN"
-	SEMICOLON TokenType = "SEMICOLON"
-	PLUS      TokenType = "PLUS"
-	MINUS     TokenType = "MINUS"
-	ASTERISK  TokenType = "ASTERISK"
-	SLASH     TokenType = "SLASH"
-	ASSIGN    TokenType = "ASSIGN"
-	GT        TokenType = "GT"
-	LT        TokenType = "LT"
-	EQ        TokenType = "EQ"
-	AND       TokenType = "AND"
-	OR        TokenType = "OR"
+	IDENT        TokenType = "IDENT"
+	KEYWORD      TokenType = "KEYWORD"
+	STRING       TokenType = "STRING"
+	INT          TokenType = "INT"
+	FLOAT        TokenType = "FLOAT"
+	BOOL         TokenType = "BOOL"
+	LBRACE       TokenType = "LBRACE"
+	RBRACE       TokenType = "RBRACE"
+	LPAREN       TokenType = "LPAREN"
+	RPAREN       TokenType = "RPAREN"
+	COLON        TokenType = "COLON"
+	SEMICOLON    TokenType = "SEMICOLON"
+	COMMA        TokenType = "COMMA"
+	PLUS         TokenType = "PLUS"
+	MINUS        TokenType = "MINUS"
+	ASTERISK     TokenType = "ASTERISK"
+	SLASH        TokenType = "SLASH"
+	ASSIGN       TokenType = "ASSIGN"
+	GT           TokenType = "GT"
+	LT           TokenType = "LT"
+	EQ           TokenType = "EQ"
+	AND          TokenType = "AND"
+	OR           TokenType = "OR"
+	AGENT        TokenType = "AGENT"
+	GOAL         TokenType = "GOAL"
+	CAPABILITIES TokenType = "CAPABILITIES"
+	BEHAVIOR     TokenType = "BEHAVIOR"
+	FUNCTION     TokenType = "FUNCTION"
+	EOF          TokenType = "EOF"
 )
 
 type Token struct {
@@ -58,7 +67,7 @@ type Lexer struct {
 	ch           byte
 }
 
-func NewLexer(input string) *Lexer {
+func New(input string) *Lexer {
 	l := &Lexer{input: input}
 	l.readChar()
 	return l
@@ -86,8 +95,12 @@ func (l *Lexer) NextToken() Token {
 		tok = Token{Type: LPAREN, Literal: string(l.ch)}
 	case ')':
 		tok = Token{Type: RPAREN, Literal: string(l.ch)}
+	case ':':
+		tok = Token{Type: COLON, Literal: string(l.ch)}
 	case ';':
 		tok = Token{Type: SEMICOLON, Literal: string(l.ch)}
+	case ',':
+		tok = Token{Type: COMMA, Literal: string(l.ch)}
 	case '+':
 		tok = Token{Type: PLUS, Literal: string(l.ch)}
 	case '-':
@@ -109,7 +122,13 @@ func (l *Lexer) NextToken() Token {
 	case '"':
 		tok.Type = STRING
 		tok.Literal = l.readString()
+	case 'a':
+		if l.peekChar() == 'g' && l.peekChar() == 'e' && l.peekChar() == 'n' && l.peekChar() == 't' {
+			tok.Type = AGENT
+			tok.Literal = l.readAgent()
+		}
 	case 0:
+		tok.Type = EOF
 		tok.Literal = ""
 	default:
 		if isDigit(l.ch) {
@@ -138,6 +157,14 @@ func (l *Lexer) readString() string {
 		if l.ch == '"' || l.ch == 0 {
 			break
 		}
+	}
+	return l.input[position:l.position]
+}
+
+func (l *Lexer) readAgent() string {
+	position := l.position
+	for l.ch != ' ' {
+		l.readChar()
 	}
 	return l.input[position:l.position]
 }

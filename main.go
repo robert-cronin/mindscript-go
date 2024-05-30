@@ -21,6 +21,7 @@ import (
 	"os"
 
 	"github.com/robert-cronin/mindscript-go/pkg/lexer"
+	"github.com/robert-cronin/mindscript-go/pkg/parser"
 	"github.com/spf13/cobra"
 )
 
@@ -53,10 +54,14 @@ func main() {
 
 			inputStr := string(input)
 
-			l := lexer.NewLexer(inputStr)
-			for tok := l.NextToken(); tok.Literal != ""; tok = l.NextToken() {
+			l := lexer.New(inputStr)
+			for tok := l.NextToken(); tok.Type != lexer.EOF; tok = l.NextToken() {
 				fmt.Printf("%+v\n", tok)
 			}
+
+			p := parser.New(l)
+			program := p.ParseProgram()
+			fmt.Println(program)
 
 		},
 	}
