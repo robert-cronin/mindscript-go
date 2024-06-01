@@ -34,6 +34,8 @@ const (
 	RBRACE       TokenType = "RBRACE"
 	LPAREN       TokenType = "LPAREN"
 	RPAREN       TokenType = "RPAREN"
+	LBRACKET     TokenType = "LBRACKET"
+	RBRACKET     TokenType = "RBRACKET"
 	COLON        TokenType = "COLON"
 	SEMICOLON    TokenType = "SEMICOLON"
 	COMMA        TokenType = "COMMA"
@@ -54,6 +56,15 @@ const (
 	FUNCTION     TokenType = "FUNCTION"
 	EOF          TokenType = "EOF"
 )
+
+// Store a list of keywords
+var keywords = map[string]TokenType{
+	"agent":        AGENT,
+	"goal":         GOAL,
+	"capabilities": CAPABILITIES,
+	"behavior":     BEHAVIOR,
+	"function":     FUNCTION,
+}
 
 type Token struct {
 	Type    TokenType
@@ -95,6 +106,10 @@ func (l *Lexer) NextToken() Token {
 		tok = Token{Type: LPAREN, Literal: string(l.ch)}
 	case ')':
 		tok = Token{Type: RPAREN, Literal: string(l.ch)}
+	case '[':
+		tok = Token{Type: LBRACKET, Literal: string(l.ch)}
+	case ']':
+		tok = Token{Type: RBRACKET, Literal: string(l.ch)}
 	case ':':
 		tok = Token{Type: COLON, Literal: string(l.ch)}
 	case ';':
@@ -122,14 +137,9 @@ func (l *Lexer) NextToken() Token {
 	case '"':
 		tok.Type = STRING
 		tok.Literal = l.readString()
-	case 'a':
-		if l.peekChar() == 'g' && l.peekChar() == 'e' && l.peekChar() == 'n' && l.peekChar() == 't' {
-			tok.Type = AGENT
-			tok.Literal = l.readAgent()
-		}
 	case 0:
 		tok.Type = EOF
-		tok.Literal = ""
+		tok.Literal = "EOF"
 	default:
 		if isDigit(l.ch) {
 			if l.peekChar() == '.' {
@@ -142,7 +152,12 @@ func (l *Lexer) NextToken() Token {
 			return tok
 		} else if isLetter(l.ch) {
 			tok.Literal = l.readIdentifier()
-			tok.Type = KEYWORD
+			tok.Type = IDENT
+			// If it is a keyword, set the type to KEYWORD
+			if keywordType, ok := keywords[tok.Literal]; ok {
+				tok.Type = keywordType
+			}
+
 			return tok
 		}
 	}
@@ -157,14 +172,6 @@ func (l *Lexer) readString() string {
 		if l.ch == '"' || l.ch == 0 {
 			break
 		}
-	}
-	return l.input[position:l.position]
-}
-
-func (l *Lexer) readAgent() string {
-	position := l.position
-	for l.ch != ' ' {
-		l.readChar()
 	}
 	return l.input[position:l.position]
 }
@@ -208,9 +215,13 @@ func isDigit(ch byte) bool {
 }
 
 func (l *Lexer) peekChar() byte {
+	return l.peekCharOffset(0)
+}
+
+func (l *Lexer) peekCharOffset(offset int) byte {
 	if l.readPosition >= len(l.input) {
 		return 0
 	} else {
-		return l.input[l.readPosition]
+		return l.input[l.readPosition+offset]
 	}
 }

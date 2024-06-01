@@ -12,10 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-.PHONY: build run
+.PHONY: build run debug build-debug
 
 all: build
 
 build:
 	@go build -o ./bin/msc main.go
 	@chmod +x ./bin/msc
+
+build-debug:
+	@go build -gcflags "all=-N -l" -o ./bin/msc main.go
+	@chmod +x ./bin/msc
+
+run: build
+	@./bin/msc -i ./examples/example.ms
+
+debug: build-debug
+	@dlv exec --headless --listen=:2345 --api-version=2 ./bin/msc -- -i ./examples/example.ms

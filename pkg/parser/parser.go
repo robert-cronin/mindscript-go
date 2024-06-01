@@ -17,6 +17,8 @@
 package parser
 
 import (
+	"fmt"
+
 	"github.com/robert-cronin/mindscript-go/pkg/lexer"
 )
 
@@ -58,6 +60,7 @@ func (p *Parser) ParseProgram() *Program {
 }
 
 func (p *Parser) parseStatement() Statement {
+	fmt.Println("parseStatement: ", p.curToken.Type)
 	switch p.curToken.Type {
 	case lexer.AGENT:
 		return p.parseAgentStatement()

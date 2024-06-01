@@ -61,7 +61,7 @@ func main() {
 
 			p := parser.New(l)
 			program := p.ParseProgram()
-			fmt.Println(program)
+			fmt.Println(program.Statements)
 
 		},
 	}
