@@ -19,8 +19,18 @@ package parser
 
 import "github.com/robert-cronin/mindscript-go/pkg/lexer"
 
+// Node interface for all nodes
 type Node interface {
 	TokenLiteral() string
+}
+
+// BaseNode provides common fields and methods for nodes
+type BaseNode struct {
+	Token lexer.Token
+}
+
+func (b *BaseNode) TokenLiteral() string {
+	return b.Token.Literal
 }
 
 // Program represents the entire program
@@ -31,9 +41,8 @@ type Program struct {
 func (p *Program) TokenLiteral() string {
 	if len(p.Statements) > 0 {
 		return p.Statements[0].TokenLiteral()
-	} else {
-		return ""
 	}
+	return ""
 }
 
 // Statement interface for all statements
@@ -50,16 +59,15 @@ type Expression interface {
 
 // Identifier represents a variable or function name
 type Identifier struct {
-	Token lexer.Token
+	BaseNode
 	Value string
 }
 
-func (i *Identifier) expressionNode()      {}
-func (i *Identifier) TokenLiteral() string { return i.Token.Literal }
+func (i *Identifier) expressionNode() {}
 
 // Agent represents an agent declaration
 type Agent struct {
-	Token        lexer.Token
+	BaseNode
 	Name         *Identifier
 	Goal         *Goal
 	Capabilities *Capabilities
@@ -67,59 +75,61 @@ type Agent struct {
 	Functions    []*Function
 }
 
-func (a *Agent) statementNode()       {}
-func (a *Agent) TokenLiteral() string { return a.Token.Literal }
+func (a *Agent) statementNode() {}
 
 // Goal represents the agent's goal
 type Goal struct {
-	Token lexer.Token
+	BaseNode
 	Value string
 }
 
-func (g *Goal) expressionNode()      {}
-func (g *Goal) TokenLiteral() string { return g.Token.Literal }
+func (g *Goal) expressionNode() {}
 
 // Capabilities represents the agent's capabilities
 type Capabilities struct {
-	Token  lexer.Token
+	BaseNode
 	Values []string
 }
 
 // Event represents an event in a behavior block
 type Event struct {
-	Token lexer.Token
-	Name  *Identifier
+	BaseNode
+	Name *Identifier
 }
 
-func (e *Event) expressionNode()      {}
-func (e *Event) TokenLiteral() string { return e.Token.Literal }
+func (e *Event) expressionNode() {}
 
 // Behavior represents an action in a behavior block
 type Behavior struct {
-	Token lexer.Token
-	Name  *Identifier
+	BaseNode
+	Name          *Identifier
+	EventHandlers []*EventHandler
 }
 
-func (a *Behavior) expressionNode()      {}
-func (a *Behavior) TokenLiteral() string { return a.Token.Literal }
+func (b *Behavior) expressionNode() {}
+
+// EventHandler represents an event handler in a behavior block
+type EventHandler struct {
+	BaseNode
+	Event          *Event
+	BlockStatement *BlockStatement
+}
 
 // Function represents a function declaration
 type Function struct {
-	Token      lexer.Token
+	BaseNode
 	Name       *Identifier
 	Parameters []*Identifier
 	Body       *BlockStatement
 	ReturnType string
 }
 
-func (f *Function) statementNode()       {}
-func (f *Function) TokenLiteral() string { return f.Token.Literal }
+func (f *Function) statementNode() {}
 
 // BlockStatement represents a block of statements
 type BlockStatement struct {
-	Token      lexer.Token
+	BaseNode
 	Statements []Statement
 }
 
-func (bs *BlockStatement) statementNode()       {}
-func (bs *BlockStatement) TokenLiteral() string { return bs.Token.Literal }
+func (bs *BlockStatement) statementNode() {}
