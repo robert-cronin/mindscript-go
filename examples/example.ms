@@ -5,7 +5,7 @@ agent DataProcessor {
     behavior {
         on "new data" {
             var data: int = 42 * 7;
-            var result: float = compute(data);
+            var result: float = compute(data, 3.14);
             log(result);
             syscall("ls", "-la");
             var scriptOutput: string = exec("python", "script.py");
@@ -13,7 +13,7 @@ agent DataProcessor {
         }
     }
 
-    function compute(input: int): float {
-        return input * 3.14;
+    function compute(input: int, multiplier: float): float {
+        return input * multiplier;
     }
 }

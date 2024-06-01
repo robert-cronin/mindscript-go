@@ -74,8 +74,7 @@ func (p *Parser) parseStatement() Statement {
 	case lexer.VAR:
 		return p.parseVarStatement()
 	case lexer.IDENT:
-		// TODO
-		return nil
+		return p.parseExpressionStatement()
 	default:
 		return nil
 	}
@@ -357,6 +356,7 @@ var precedences = map[lexer.TokenType]int{
 	lexer.MINUS:    SUM,
 	lexer.ASTERISK: PRODUCT,
 	lexer.SLASH:    PRODUCT,
+	lexer.LPAREN:   CALL,
 }
 
 func (p *Parser) parseExpression(precedence int) *Expression {
@@ -374,8 +374,10 @@ func (p *Parser) parseExpression(precedence int) *Expression {
 	case lexer.BOOL:
 		leftExp = p.parseBooleanLiteral()
 	default:
-		fmt.Println("Error parsing expression")
-		return nil
+		// Check first if its a function call
+		if p.peekToken.Type != lexer.LPAREN {
+			return nil
+		}
 	}
 
 	for !p.peekTokenIs(lexer.SEMICOLON) && precedence < p.peekPrecedence() {
@@ -383,6 +385,9 @@ func (p *Parser) parseExpression(precedence int) *Expression {
 		case lexer.PLUS, lexer.MINUS, lexer.ASTERISK, lexer.SLASH:
 			p.nextToken()
 			leftExp = p.parseInfixExpression(leftExp)
+		case lexer.LPAREN:
+			p.nextToken()
+			leftExp = p.parseCallExpression(leftExp)
 		default:
 			return &leftExp
 		}
@@ -394,15 +399,45 @@ func (p *Parser) parseExpression(precedence int) *Expression {
 func (p *Parser) parseInfixExpression(left Expression) Expression {
 	expression := &InfixExpression{
 		BaseNode: BaseNode{Token: p.curToken},
-		Left:     left,
-		Operator: p.curToken,
+		Left:     &left,
+		Operator: &p.curToken,
 	}
 
 	precedence := p.curPrecedence()
 	p.nextToken()
-	expression.Right = *p.parseExpression(precedence)
+	expression.Right = p.parseExpression(precedence)
 
 	return expression
+}
+
+func (p *Parser) parseCallExpression(function Expression) Expression {
+	exp := &CallExpression{BaseNode: BaseNode{Token: p.curToken}, Function: &function}
+	exp.Arguments = p.parseExpressionList(lexer.RPAREN)
+	return exp
+}
+
+func (p *Parser) parseExpressionList(end lexer.TokenType) []*Expression {
+	list := []*Expression{}
+
+	if p.peekTokenIs(end) {
+		p.nextToken()
+		return list
+	}
+
+	p.nextToken()
+	list = append(list, p.parseExpression(LOWEST))
+
+	for p.peekTokenIs(lexer.COMMA) {
+		p.nextToken()
+		p.nextToken()
+		list = append(list, p.parseExpression(LOWEST))
+	}
+
+	if !p.expectPeek(end) {
+		return nil
+	}
+
+	return list
 }
 
 func (p *Parser) parseIdentifier() *IdentifierLiteral {
@@ -463,6 +498,19 @@ func (p *Parser) parseBooleanLiteral() *BooleanLiteral {
 	boolean.Value = value
 
 	return boolean
+}
+
+func (p *Parser) parseExpressionStatement() *ExpressionStatement {
+	stmt := &ExpressionStatement{}
+	stmt.Token = p.curToken
+
+	stmt.Expression = p.parseExpression(LOWEST)
+
+	if p.peekTokenIs(lexer.SEMICOLON) {
+		p.nextToken()
+	}
+
+	return stmt
 }
 
 func (p *Parser) curTokenIs(t lexer.TokenType) bool {

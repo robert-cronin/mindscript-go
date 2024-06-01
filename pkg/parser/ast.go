@@ -194,9 +194,32 @@ func (b *BooleanLiteral) expressionNode() {}
 // InfixExpression represents binary operations like 42 * 7
 type InfixExpression struct {
 	BaseNode
-	Left     Expression
-	Operator lexer.Token
-	Right    Expression
+	Left     *Expression
+	Operator *lexer.Token
+	Right    *Expression
 }
 
 func (ie *InfixExpression) expressionNode() {}
+
+// CallExpression represents a function call
+type CallExpression struct {
+	BaseNode
+	Function  *Expression
+	Arguments []*Expression
+}
+
+func (ce *CallExpression) expressionNode() {}
+
+// ExpressionStatement represents an expression statement
+type ExpressionStatement struct {
+	Statement
+	BaseNode
+	Expression *Expression
+}
+
+// TokenLiteral implements Statement.
+func (es *ExpressionStatement) TokenLiteral() string {
+	return es.Token.Literal
+}
+
+func (es *ExpressionStatement) statementNode() {}
