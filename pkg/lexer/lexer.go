@@ -24,32 +24,38 @@ import (
 type TokenType string
 
 const (
-	IDENT        TokenType = "IDENT"
-	KEYWORD      TokenType = "KEYWORD"
-	STRING       TokenType = "STRING"
-	INT          TokenType = "INT"
-	FLOAT        TokenType = "FLOAT"
-	BOOL         TokenType = "BOOL"
-	LBRACE       TokenType = "LBRACE"
-	RBRACE       TokenType = "RBRACE"
-	LPAREN       TokenType = "LPAREN"
-	RPAREN       TokenType = "RPAREN"
-	LBRACKET     TokenType = "LBRACKET"
-	RBRACKET     TokenType = "RBRACKET"
-	COLON        TokenType = "COLON"
-	SEMICOLON    TokenType = "SEMICOLON"
-	COMMA        TokenType = "COMMA"
-	PLUS         TokenType = "PLUS"
-	MINUS        TokenType = "MINUS"
-	ASTERISK     TokenType = "ASTERISK"
-	SLASH        TokenType = "SLASH"
-	ASSIGN       TokenType = "ASSIGN"
-	GT           TokenType = "GT"
-	LT           TokenType = "LT"
-	EQ           TokenType = "EQ"
-	AND          TokenType = "AND"
-	OR           TokenType = "OR"
-	AGENT        TokenType = "AGENT"
+	IDENT     TokenType = "IDENT"
+	STRING    TokenType = "STRING"
+	INT       TokenType = "INT"
+	FLOAT     TokenType = "FLOAT"
+	BOOL      TokenType = "BOOL"
+	LBRACE    TokenType = "LBRACE"
+	RBRACE    TokenType = "RBRACE"
+	LPAREN    TokenType = "LPAREN"
+	RPAREN    TokenType = "RPAREN"
+	LBRACKET  TokenType = "LBRACKET"
+	RBRACKET  TokenType = "RBRACKET"
+	COLON     TokenType = "COLON"
+	SEMICOLON TokenType = "SEMICOLON"
+	COMMA     TokenType = "COMMA"
+	PLUS      TokenType = "PLUS"
+	MINUS     TokenType = "MINUS"
+	ASTERISK  TokenType = "ASTERISK"
+	SLASH     TokenType = "SLASH"
+	ASSIGN    TokenType = "ASSIGN"
+	GT        TokenType = "GT"
+	LT        TokenType = "LT"
+	EQ        TokenType = "EQ"
+	AND       TokenType = "AND"
+	OR        TokenType = "OR"
+	AGENT     TokenType = "AGENT"
+	ON        TokenType = "ON"
+	VAR       TokenType = "VAR"
+
+	LOG     TokenType = "LOG"
+	SYSCALL TokenType = "SYSCALL"
+	EXEC    TokenType = "EXEC"
+
 	GOAL         TokenType = "GOAL"
 	CAPABILITIES TokenType = "CAPABILITIES"
 	BEHAVIOR     TokenType = "BEHAVIOR"
@@ -64,6 +70,15 @@ var keywords = map[string]TokenType{
 	"capabilities": CAPABILITIES,
 	"behavior":     BEHAVIOR,
 	"function":     FUNCTION,
+	"on":           ON,
+	"var":          VAR,
+	"int":          INT,
+	"float":        FLOAT,
+	"string":       STRING,
+	"bool":         BOOL,
+	"log":          LOG,
+	"syscall":      SYSCALL,
+	"exec":         EXEC,
 }
 
 type Token struct {
@@ -225,3 +240,4 @@ func (l *Lexer) peekCharOffset(offset int) byte {
 		return l.input[l.readPosition+offset]
 	}
 }
+
