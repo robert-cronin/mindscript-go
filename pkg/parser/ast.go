@@ -133,3 +133,60 @@ type BlockStatement struct {
 }
 
 func (bs *BlockStatement) statementNode() {}
+
+// VarStatement represents a variable declaration
+type VarStatement struct {
+	Statement
+	Token lexer.Token
+	Name  *Identifier
+	Type  *DataType
+	Value *Expression
+}
+
+func (vs *VarStatement) statementNode() {}
+
+// DataType
+type DataType struct {
+	BaseNode
+	Token lexer.Token
+}
+
+// IdentifierLiteral
+type IdentifierLiteral struct {
+	BaseNode
+	Value string
+}
+
+func (il *IdentifierLiteral) expressionNode() {}
+
+// IntegerLiteral
+type IntegerLiteral struct {
+	BaseNode
+	Value int64
+}
+
+func (il *IntegerLiteral) expressionNode() {}
+
+// FloatLiteral
+type FloatLiteral struct {
+	BaseNode
+	Value float64
+}
+
+func (fl *FloatLiteral) expressionNode() {}
+
+// StringLiteral
+type StringLiteral struct {
+	BaseNode
+	Value string
+}
+
+func (sl *StringLiteral) expressionNode() {}
+
+// Boolean
+type BooleanLiteral struct {
+	BaseNode
+	Value bool
+}
+
+func (b *BooleanLiteral) expressionNode() {}

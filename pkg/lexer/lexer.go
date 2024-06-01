@@ -25,10 +25,6 @@ type TokenType string
 
 const (
 	IDENT     TokenType = "IDENT"
-	STRING    TokenType = "STRING"
-	INT       TokenType = "INT"
-	FLOAT     TokenType = "FLOAT"
-	BOOL      TokenType = "BOOL"
 	LBRACE    TokenType = "LBRACE"
 	RBRACE    TokenType = "RBRACE"
 	LPAREN    TokenType = "LPAREN"
@@ -63,6 +59,14 @@ const (
 	EOF          TokenType = "EOF"
 )
 
+// Data types
+const (
+	STRING TokenType = "STRING"
+	INT    TokenType = "INT"
+	FLOAT  TokenType = "FLOAT"
+	BOOL   TokenType = "BOOL"
+)
+
 // Store a list of keywords
 var keywords = map[string]TokenType{
 	"agent":        AGENT,
@@ -79,6 +83,12 @@ var keywords = map[string]TokenType{
 	"log":          LOG,
 	"syscall":      SYSCALL,
 	"exec":         EXEC,
+}
+var dataTypes = map[string]TokenType{
+	"int":    INT,
+	"float":  FLOAT,
+	"string": STRING,
+	"bool":   BOOL,
 }
 
 type Token struct {
@@ -240,4 +250,3 @@ func (l *Lexer) peekCharOffset(offset int) byte {
 		return l.input[l.readPosition+offset]
 	}
 }
-

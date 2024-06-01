@@ -4,7 +4,7 @@ agent DataProcessor {
     
     behavior {
         on "new data" {
-            var data: int = 42;
+            var data: int = 42 * 7;
             var result: float = compute(data);
             log(result);
             syscall("ls", "-la");
