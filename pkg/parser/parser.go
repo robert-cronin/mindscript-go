@@ -73,8 +73,8 @@ func (p *Parser) parseStatement() Statement {
 		return agent
 	case lexer.VAR:
 		return p.parseVarStatement()
-	// case lexer.FUNCTION:
-	case lexer.EOF:
+	case lexer.IDENT:
+		// TODO
 		return nil
 	default:
 		return nil
@@ -98,8 +98,6 @@ func (p *Parser) parseAgentStatement() (*Agent, error) {
 		err := errors.New("Agent statement must have a body")
 		return nil, err
 	}
-
-	// Parse goal, capabilities, behaviors, and functions here
 
 	for !p.curTokenIs(lexer.RBRACE) && !p.curTokenIs(lexer.EOF) {
 		p.nextToken()
@@ -174,7 +172,6 @@ func (p *Parser) parseBehavior() *Behavior {
 		return nil
 	}
 
-	// Parse events and actions inside behavior block
 	for !p.curTokenIs(lexer.RBRACE) && !p.curTokenIs(lexer.EOF) {
 		p.nextToken()
 
@@ -267,7 +264,6 @@ func (p *Parser) parseVarStatement() *VarStatement {
 		return nil
 	}
 
-	// Expect type
 	stmt.Type = p.parseDataType()
 	if stmt.Type == nil {
 		return nil
@@ -277,11 +273,8 @@ func (p *Parser) parseVarStatement() *VarStatement {
 		return nil
 	}
 
-	// Expect and expression
-	stmt.Value = p.parseExpression()
-	if stmt.Value == nil {
-		return nil
-	}
+	p.nextToken()
+	stmt.Value = p.parseExpression(LOWEST)
 
 	return stmt
 }
@@ -289,7 +282,6 @@ func (p *Parser) parseVarStatement() *VarStatement {
 func (p *Parser) parseDataType() *DataType {
 	dataType := &DataType{}
 
-	// Validate data type
 	switch p.peekToken.Type {
 	case lexer.INT, lexer.FLOAT, lexer.STRING, lexer.BOOL:
 		p.nextToken()
@@ -351,35 +343,66 @@ func (p *Parser) parseBlockStatement() *BlockStatement {
 	return block
 }
 
-func (p *Parser) parseExpression() *Expression {
-	p.nextToken()
-	// This could be anything
-	// So we need to check for the type of expression
-	// Parse expression until we meet a right brace
-	for p.curToken.Type != lexer.RBRACE {
-		// There are currently two types of statements we need to handle
-		// 1. statements (i.e. variable declarations including possibly expressions)
-		// 2. function calls
-		for p.curToken.Type != lexer.SEMICOLON {
-			switch p.curToken.Type {
-			case lexer.IDENT:
-				p.parseIdentifier()
-			case lexer.INT:
-				p.parseIntegerLiteral()
-			case lexer.FLOAT:
-				p.parseFloatLiteral()
-			case lexer.STRING:
-				p.parseStringLiteral()
-			case lexer.BOOL:
-				p.parseBooleanLiteral()
-			default:
-				fmt.Println("Error parsing expression")
-				return nil
-			}
-			return nil
+const (
+	_ int = iota
+	LOWEST
+	SUM     // + or -
+	PRODUCT // * or /
+	PREFIX  // -X or !X
+	CALL    // myFunction(X)
+)
+
+var precedences = map[lexer.TokenType]int{
+	lexer.PLUS:     SUM,
+	lexer.MINUS:    SUM,
+	lexer.ASTERISK: PRODUCT,
+	lexer.SLASH:    PRODUCT,
+}
+
+func (p *Parser) parseExpression(precedence int) *Expression {
+	var leftExp Expression
+
+	switch p.curToken.Type {
+	case lexer.IDENT:
+		leftExp = p.parseIdentifier()
+	case lexer.INT:
+		leftExp = p.parseIntegerLiteral()
+	case lexer.FLOAT:
+		leftExp = p.parseFloatLiteral()
+	case lexer.STRING:
+		leftExp = p.parseStringLiteral()
+	case lexer.BOOL:
+		leftExp = p.parseBooleanLiteral()
+	default:
+		fmt.Println("Error parsing expression")
+		return nil
+	}
+
+	for !p.peekTokenIs(lexer.SEMICOLON) && precedence < p.peekPrecedence() {
+		switch p.peekToken.Type {
+		case lexer.PLUS, lexer.MINUS, lexer.ASTERISK, lexer.SLASH:
+			p.nextToken()
+			leftExp = p.parseInfixExpression(leftExp)
+		default:
+			return &leftExp
 		}
 	}
-	return nil
+
+	return &leftExp
+}
+
+func (p *Parser) parseInfixExpression(left Expression) Expression {
+	expression := &InfixExpression{
+		BaseNode: BaseNode{Token: p.curToken},
+		Left:     left,
+		Operator: p.curToken,
+	}
+
+	precedence := p.curPrecedence()
+	p.nextToken()
+	expression.Right = *p.parseExpression(precedence)
+
+	return expression
 }
 
 func (p *Parser) parseIdentifier() *IdentifierLiteral {
@@ -457,4 +480,18 @@ func (p *Parser) expectPeek(t lexer.TokenType) bool {
 	} else {
 		return false
 	}
+}
+
+func (p *Parser) peekPrecedence() int {
+	if p, ok := precedences[p.peekToken.Type]; ok {
+		return p
+	}
+	return LOWEST
+}
+
+func (p *Parser) curPrecedence() int {
+	if p, ok := precedences[p.curToken.Type]; ok {
+		return p
+	}
+	return LOWEST
 }

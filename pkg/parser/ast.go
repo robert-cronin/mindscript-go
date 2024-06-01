@@ -26,6 +26,7 @@ type Node interface {
 
 // BaseNode provides common fields and methods for nodes
 type BaseNode struct {
+	Node
 	Token lexer.Token
 }
 
@@ -102,7 +103,6 @@ func (e *Event) expressionNode() {}
 // Behavior represents an action in a behavior block
 type Behavior struct {
 	BaseNode
-	Name          *Identifier
 	EventHandlers []*EventHandler
 }
 
@@ -190,3 +190,13 @@ type BooleanLiteral struct {
 }
 
 func (b *BooleanLiteral) expressionNode() {}
+
+// InfixExpression represents binary operations like 42 * 7
+type InfixExpression struct {
+	BaseNode
+	Left     Expression
+	Operator lexer.Token
+	Right    Expression
+}
+
+func (ie *InfixExpression) expressionNode() {}
