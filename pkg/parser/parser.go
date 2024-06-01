@@ -17,6 +17,7 @@
 package parser
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/robert-cronin/mindscript-go/pkg/lexer"
@@ -63,23 +64,30 @@ func (p *Parser) parseStatement() Statement {
 	fmt.Println("parseStatement: ", p.curToken.Type)
 	switch p.curToken.Type {
 	case lexer.AGENT:
-		return p.parseAgentStatement()
+		agent, err := p.parseAgentStatement()
+		if err != nil {
+			fmt.Println("Error parsing agent statement: ", err)
+			return nil
+		}
+		return agent
 	default:
 		return nil
 	}
 }
 
-func (p *Parser) parseAgentStatement() *Agent {
+func (p *Parser) parseAgentStatement() (*Agent, error) {
 	stmt := &Agent{Token: p.curToken}
 
 	if !p.expectPeek(lexer.IDENT) {
-		return nil
+		err := errors.New("Agent statement must have a name")
+		return nil, err
 	}
 
 	stmt.Name = &Identifier{Token: p.curToken, Value: p.curToken.Literal}
 
 	if !p.expectPeek(lexer.LBRACE) {
-		return nil
+		err := errors.New("Agent statement must have a body")
+		return nil, err
 	}
 
 	// Parse goal, capabilities, behaviors, and functions here
@@ -99,11 +107,15 @@ func (p *Parser) parseAgentStatement() *Agent {
 		}
 	}
 
-	return stmt
+	return stmt, nil
 }
 
 func (p *Parser) parseGoal() *Goal {
 	goal := &Goal{Token: p.curToken}
+
+	if !p.expectPeek(lexer.COLON) {
+		return nil
+	}
 
 	if !p.expectPeek(lexer.STRING) {
 		return nil
@@ -117,7 +129,11 @@ func (p *Parser) parseGoal() *Goal {
 func (p *Parser) parseCapabilities() *Capabilities {
 	capabilities := &Capabilities{Token: p.curToken}
 
-	if !p.expectPeek(lexer.LBRACE) {
+	if !p.expectPeek(lexer.COLON) {
+		return nil
+	}
+
+	if !p.expectPeek(lexer.LBRACKET) {
 		return nil
 	}
 
@@ -125,6 +141,13 @@ func (p *Parser) parseCapabilities() *Capabilities {
 		p.nextToken()
 		if p.curToken.Type == lexer.STRING {
 			capabilities.Values = append(capabilities.Values, p.curToken.Literal)
+		} else if p.curToken.Type == lexer.COMMA {
+			continue
+		} else if p.curToken.Type == lexer.RBRACKET {
+			break
+		} else {
+			fmt.Println("Error parsing capabilities")
+			return nil
 		}
 	}
 
@@ -138,7 +161,7 @@ func (p *Parser) parseBehavior() *Behavior {
 		return nil
 	}
 
-	// Parse events and actions inside behavior block
+	// TODO: Parse events and actions inside behavior block
 
 	return behavior
 }

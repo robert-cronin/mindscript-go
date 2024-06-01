@@ -55,9 +55,9 @@ func main() {
 			inputStr := string(input)
 
 			l := lexer.New(inputStr)
-			for tok := l.NextToken(); tok.Type != lexer.EOF; tok = l.NextToken() {
-				fmt.Printf("%+v\n", tok)
-			}
+			// for tok := l.NextToken(); tok.Type != lexer.EOF; tok = l.NextToken() {
+			// 	fmt.Printf("%+v\n", tok)
+			// }
 
 			p := parser.New(l)
 			program := p.ParseProgram()
