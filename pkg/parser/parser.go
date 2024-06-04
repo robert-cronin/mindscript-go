@@ -75,6 +75,8 @@ func (p *Parser) parseStatement() Statement {
 		return p.parseVarStatement()
 	case lexer.IDENT:
 		return p.parseExpressionStatement()
+	case lexer.RETURN:
+		return p.parseReturnStatement()
 	case lexer.FUNCTION:
 		return p.parseFunction()
 	default:
@@ -103,7 +105,6 @@ func (p *Parser) parseAgentStatement() (*Agent, error) {
 Loop:
 	for !p.curTokenIs(lexer.EOF) {
 		p.nextToken()
-		fmt.Printf(p.l.Prefix(p.curToken.Loc))
 
 		switch p.curToken.Type {
 		case lexer.GOAL:
@@ -240,11 +241,7 @@ func (p *Parser) parseFunction() *Function {
 		return nil
 	}
 
-	if !p.expectPeek(lexer.IDENT) {
-		return nil
-	}
-
-	function.ReturnType = p.parseDataType()
+	function.ReturnType = p.parseReturnDataType()
 
 	if !p.expectPeek(lexer.LBRACE) {
 		return nil
@@ -352,14 +349,17 @@ func (p *Parser) parseFunctionArguments() []*FunctionArgument {
 func (p *Parser) parseBlockStatement() *BlockStatement {
 	block := &BlockStatement{}
 	block.Token = p.curToken
-	block.Statements = []Statement{}
+	block.Statements = make(map[int]*Statement, 0)
+
+	count := 0
 
 	p.nextToken()
 
 	for !p.curTokenIs(lexer.RBRACE) && !p.curTokenIs(lexer.EOF) {
 		stmt := p.parseStatement()
 		if stmt != nil {
-			block.Statements = append(block.Statements, stmt)
+			block.Statements[count] = &stmt
+			count++
 		}
 		p.nextToken()
 	}
@@ -537,6 +537,37 @@ func (p *Parser) parseExpressionStatement() *ExpressionStatement {
 
 	return stmt
 }
+
+func (p *Parser) parseReturnDataType() *DataType {
+	dataType := &DataType{}
+
+	switch p.peekToken.Type {
+	case lexer.INT, lexer.FLOAT, lexer.STRING, lexer.BOOL:
+		p.nextToken()
+		dataType.Token = p.curToken
+	default:
+		fmt.Println("Error parsing return data type")
+		return nil
+	}
+
+	return dataType
+}
+
+func (p *Parser) parseReturnStatement() *ReturnStatement {
+	stmt := &ReturnStatement{}
+	stmt.Token = p.curToken
+
+	p.nextToken()
+
+	stmt.Value = p.parseExpression(LOWEST)
+
+	if p.peekTokenIs(lexer.SEMICOLON) {
+		p.nextToken()
+	}
+
+	return stmt
+}
+
 
 func (p *Parser) curTokenIs(t lexer.TokenType) bool {
 	return p.curToken.Type == t

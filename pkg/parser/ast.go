@@ -133,10 +133,19 @@ type Function struct {
 
 func (f *Function) statementNode() {}
 
+// ReturnStatement represents a return statement
+type ReturnStatement struct {
+	BaseNode
+	Value *Expression
+}
+
+func (rs *ReturnStatement) statementNode() {}
+
 // BlockStatement represents a block of statements
 type BlockStatement struct {
 	BaseNode
-	Statements []Statement
+	// statements should be executed in order
+	Statements map[int]*Statement
 }
 
 func (bs *BlockStatement) statementNode() {}

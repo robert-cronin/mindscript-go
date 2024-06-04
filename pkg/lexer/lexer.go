@@ -47,6 +47,7 @@ const (
 	AGENT     TokenType = "AGENT"
 	ON        TokenType = "ON"
 	VAR       TokenType = "VAR"
+	RETURN    TokenType = "RETURN"
 
 	GOAL         TokenType = "GOAL"
 	CAPABILITIES TokenType = "CAPABILITIES"
@@ -76,6 +77,7 @@ var keywords = map[string]TokenType{
 	"float":        FLOAT,
 	"string":       STRING,
 	"bool":         BOOL,
+	"return":       RETURN,
 }
 var dataTypes = map[string]TokenType{
 	"int":    INT,
