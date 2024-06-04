@@ -115,13 +115,20 @@ type EventHandler struct {
 	BlockStatement *BlockStatement
 }
 
+// FunctionArgument represents a function argument
+type FunctionArgument struct {
+	BaseNode
+	Name *Identifier
+	Type *DataType
+}
+
 // Function represents a function declaration
 type Function struct {
 	BaseNode
 	Name       *Identifier
-	Parameters []*Identifier
+	Arguments  []*FunctionArgument
 	Body       *BlockStatement
-	ReturnType string
+	ReturnType *DataType
 }
 
 func (f *Function) statementNode() {}

@@ -62,7 +62,6 @@ func (p *Parser) ParseProgram() *Program {
 }
 
 func (p *Parser) parseStatement() Statement {
-	fmt.Printf(p.l.Prefix(p.curToken.Loc))
 	switch p.curToken.Type {
 	case lexer.AGENT:
 		// TODO: make err handling like this everywhere else
@@ -76,6 +75,8 @@ func (p *Parser) parseStatement() Statement {
 		return p.parseVarStatement()
 	case lexer.IDENT:
 		return p.parseExpressionStatement()
+	case lexer.FUNCTION:
+		return p.parseFunction()
 	default:
 		return nil
 	}
@@ -99,8 +100,10 @@ func (p *Parser) parseAgentStatement() (*Agent, error) {
 		return nil, err
 	}
 
-	for !p.curTokenIs(lexer.RBRACE) && !p.curTokenIs(lexer.EOF) {
+Loop:
+	for !p.curTokenIs(lexer.EOF) {
 		p.nextToken()
+		fmt.Printf(p.l.Prefix(p.curToken.Loc))
 
 		switch p.curToken.Type {
 		case lexer.GOAL:
@@ -111,6 +114,8 @@ func (p *Parser) parseAgentStatement() (*Agent, error) {
 			stmt.Behaviors = append(stmt.Behaviors, p.parseBehavior())
 		case lexer.FUNCTION:
 			stmt.Functions = append(stmt.Functions, p.parseFunction())
+		case lexer.RBRACE:
+			break Loop
 		}
 	}
 
@@ -172,14 +177,15 @@ func (p *Parser) parseBehavior() *Behavior {
 		return nil
 	}
 
-	for !p.curTokenIs(lexer.RBRACE) && !p.curTokenIs(lexer.EOF) {
+Loop:
+	for !p.curTokenIs(lexer.EOF) {
 		p.nextToken()
 
 		switch p.curToken.Type {
 		case lexer.ON:
 			behavior.EventHandlers = append(behavior.EventHandlers, p.parseEventHandler())
 		case lexer.RBRACE:
-			break
+			break Loop
 		default:
 			fmt.Println("Error parsing behavior")
 			return nil
@@ -203,6 +209,7 @@ func (p *Parser) parseEventHandler() *EventHandler {
 	eventHandler.Event.Name.Value = p.curToken.Literal
 
 	if !p.expectPeek(lexer.LBRACE) {
+		fmt.Println("Error parsing event handler")
 		return nil
 	}
 
@@ -227,7 +234,7 @@ func (p *Parser) parseFunction() *Function {
 		return nil
 	}
 
-	function.Parameters = p.parseFunctionParameters()
+	function.Arguments = p.parseFunctionArguments()
 
 	if !p.expectPeek(lexer.COLON) {
 		return nil
@@ -237,7 +244,7 @@ func (p *Parser) parseFunction() *Function {
 		return nil
 	}
 
-	function.ReturnType = p.curToken.Literal
+	function.ReturnType = p.parseDataType()
 
 	if !p.expectPeek(lexer.LBRACE) {
 		return nil
@@ -294,35 +301,52 @@ func (p *Parser) parseDataType() *DataType {
 	return dataType
 }
 
-func (p *Parser) parseFunctionParameters() []*Identifier {
-	identifiers := []*Identifier{}
+func (p *Parser) parseFunctionArguments() []*FunctionArgument {
+	args := []*FunctionArgument{}
 
 	if p.peekTokenIs(lexer.RPAREN) {
 		p.nextToken()
-		return identifiers
+		return args
 	}
 
 	p.nextToken()
 
-	ident := &Identifier{}
-	ident.Token = p.curToken
-	ident.Value = p.curToken.Literal
-	identifiers = append(identifiers, ident)
+	arg := &FunctionArgument{}
+	arg.Name = &Identifier{}
+	arg.Name.Token = p.curToken
+	arg.Name.Value = p.curToken.Literal
+
+	if !p.expectPeek(lexer.COLON) {
+		return nil
+	}
+
+	arg.Type = p.parseDataType()
+
+	args = append(args, arg)
 
 	for p.peekTokenIs(lexer.COMMA) {
 		p.nextToken()
 		p.nextToken()
-		ident := &Identifier{}
-		ident.Token = p.curToken
-		ident.Value = p.curToken.Literal
-		identifiers = append(identifiers, ident)
+
+		arg := &FunctionArgument{}
+		arg.Name = &Identifier{}
+		arg.Name.Token = p.curToken
+		arg.Name.Value = p.curToken.Literal
+
+		if !p.expectPeek(lexer.COLON) {
+			return nil
+		}
+
+		arg.Type = p.parseDataType()
+
+		args = append(args, arg)
 	}
 
 	if !p.expectPeek(lexer.RPAREN) {
 		return nil
 	}
 
-	return identifiers
+	return args
 }
 
 func (p *Parser) parseBlockStatement() *BlockStatement {
@@ -504,7 +528,6 @@ func (p *Parser) parseBooleanLiteral() *BooleanLiteral {
 func (p *Parser) parseExpressionStatement() *ExpressionStatement {
 	stmt := &ExpressionStatement{}
 	stmt.Token = p.curToken
-	fmt.Printf(p.l.Prefix(p.curToken.Loc))
 
 	stmt.Expression = p.parseExpression(LOWEST)
 
