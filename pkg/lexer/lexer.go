@@ -48,10 +48,6 @@ const (
 	ON        TokenType = "ON"
 	VAR       TokenType = "VAR"
 
-	LOG     TokenType = "LOG"
-	SYSCALL TokenType = "SYSCALL"
-	EXEC    TokenType = "EXEC"
-
 	GOAL         TokenType = "GOAL"
 	CAPABILITIES TokenType = "CAPABILITIES"
 	BEHAVIOR     TokenType = "BEHAVIOR"
@@ -80,9 +76,6 @@ var keywords = map[string]TokenType{
 	"float":        FLOAT,
 	"string":       STRING,
 	"bool":         BOOL,
-	"log":          LOG,
-	"syscall":      SYSCALL,
-	"exec":         EXEC,
 }
 var dataTypes = map[string]TokenType{
 	"int":    INT,
@@ -94,6 +87,7 @@ var dataTypes = map[string]TokenType{
 type Token struct {
 	Type    TokenType
 	Literal string
+	Loc     int
 }
 
 type Lexer struct {
@@ -118,71 +112,74 @@ func (l *Lexer) readChar() {
 	l.position = l.readPosition
 	l.readPosition++
 }
-
 func (l *Lexer) NextToken() Token {
 	var tok Token
 	l.skipWhitespace()
+	tok.Loc = l.position
 	switch l.ch {
 	case '{':
-		tok = Token{Type: LBRACE, Literal: string(l.ch)}
+		tok = Token{Type: LBRACE, Literal: string(l.ch), Loc: l.position}
 	case '}':
-		tok = Token{Type: RBRACE, Literal: string(l.ch)}
+		tok = Token{Type: RBRACE, Literal: string(l.ch), Loc: l.position}
 	case '(':
-		tok = Token{Type: LPAREN, Literal: string(l.ch)}
+		tok = Token{Type: LPAREN, Literal: string(l.ch), Loc: l.position}
 	case ')':
-		tok = Token{Type: RPAREN, Literal: string(l.ch)}
+		tok = Token{Type: RPAREN, Literal: string(l.ch), Loc: l.position}
 	case '[':
-		tok = Token{Type: LBRACKET, Literal: string(l.ch)}
+		tok = Token{Type: LBRACKET, Literal: string(l.ch), Loc: l.position}
 	case ']':
-		tok = Token{Type: RBRACKET, Literal: string(l.ch)}
+		tok = Token{Type: RBRACKET, Literal: string(l.ch), Loc: l.position}
 	case ':':
-		tok = Token{Type: COLON, Literal: string(l.ch)}
+		tok = Token{Type: COLON, Literal: string(l.ch), Loc: l.position}
 	case ';':
-		tok = Token{Type: SEMICOLON, Literal: string(l.ch)}
+		tok = Token{Type: SEMICOLON, Literal: string(l.ch), Loc: l.position}
 	case ',':
-		tok = Token{Type: COMMA, Literal: string(l.ch)}
+		tok = Token{Type: COMMA, Literal: string(l.ch), Loc: l.position}
 	case '+':
-		tok = Token{Type: PLUS, Literal: string(l.ch)}
+		tok = Token{Type: PLUS, Literal: string(l.ch), Loc: l.position}
 	case '-':
-		tok = Token{Type: MINUS, Literal: string(l.ch)}
+		tok = Token{Type: MINUS, Literal: string(l.ch), Loc: l.position}
 	case '*':
-		tok = Token{Type: ASTERISK, Literal: string(l.ch)}
+		tok = Token{Type: ASTERISK, Literal: string(l.ch), Loc: l.position}
 	case '/':
-		tok = Token{Type: SLASH, Literal: string(l.ch)}
+		tok = Token{Type: SLASH, Literal: string(l.ch), Loc: l.position}
 	case '=':
-		tok = Token{Type: ASSIGN, Literal: string(l.ch)}
+		tok = Token{Type: ASSIGN, Literal: string(l.ch), Loc: l.position}
 	case '>':
-		tok = Token{Type: GT, Literal: string(l.ch)}
+		tok = Token{Type: GT, Literal: string(l.ch), Loc: l.position}
 	case '<':
-		tok = Token{Type: LT, Literal: string(l.ch)}
+		tok = Token{Type: LT, Literal: string(l.ch), Loc: l.position}
 	case '&':
-		tok = Token{Type: AND, Literal: string(l.ch)}
+		tok = Token{Type: AND, Literal: string(l.ch), Loc: l.position}
 	case '|':
-		tok = Token{Type: OR, Literal: string(l.ch)}
+		tok = Token{Type: OR, Literal: string(l.ch), Loc: l.position}
 	case '"':
 		tok.Type = STRING
 		tok.Literal = l.readString()
+		tok.Loc = l.position
 	case 0:
 		tok.Type = EOF
 		tok.Literal = "EOF"
+		tok.Loc = l.position
 	default:
 		if isDigit(l.ch) {
 			if l.peekChar() == '.' {
 				tok.Literal = l.readFloat()
 				tok.Type = FLOAT
+				tok.Loc = l.position
 			} else {
 				tok.Literal = l.readInt()
 				tok.Type = INT
+				tok.Loc = l.position
 			}
 			return tok
 		} else if isLetter(l.ch) {
 			tok.Literal = l.readIdentifier()
 			tok.Type = IDENT
-			// If it is a keyword, set the type to KEYWORD
+			tok.Loc = l.position
 			if keywordType, ok := keywords[tok.Literal]; ok {
 				tok.Type = keywordType
 			}
-
 			return tok
 		}
 	}
@@ -249,4 +246,9 @@ func (l *Lexer) peekCharOffset(offset int) byte {
 	} else {
 		return l.input[l.readPosition+offset]
 	}
+}
+
+// Helper to get prefix up to loc
+func (l *Lexer) Prefix(loc int) string {
+	return l.input[:loc]
 }

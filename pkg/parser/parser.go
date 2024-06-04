@@ -62,6 +62,7 @@ func (p *Parser) ParseProgram() *Program {
 }
 
 func (p *Parser) parseStatement() Statement {
+	fmt.Printf(p.l.Prefix(p.curToken.Loc))
 	switch p.curToken.Type {
 	case lexer.AGENT:
 		// TODO: make err handling like this everywhere else
@@ -503,6 +504,7 @@ func (p *Parser) parseBooleanLiteral() *BooleanLiteral {
 func (p *Parser) parseExpressionStatement() *ExpressionStatement {
 	stmt := &ExpressionStatement{}
 	stmt.Token = p.curToken
+	fmt.Printf(p.l.Prefix(p.curToken.Loc))
 
 	stmt.Expression = p.parseExpression(LOWEST)
 
