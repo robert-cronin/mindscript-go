@@ -22,6 +22,7 @@ import (
 
 	"github.com/robert-cronin/mindscript-go/pkg/lexer"
 	"github.com/robert-cronin/mindscript-go/pkg/parser"
+	"github.com/robert-cronin/mindscript-go/pkg/semantic"
 	"github.com/spf13/cobra"
 )
 
@@ -59,9 +60,20 @@ func main() {
 			// 	fmt.Printf("%+v\n", tok)
 			// }
 
+			// Parse the input
 			p := parser.New(l)
 			program := p.ParseProgram()
-			fmt.Println(program.Statements)
+			// fmt.Println(program.Statements)
+
+			// Analyze the program
+			err = semantic.Analyze(program)
+			if err != nil {
+				fmt.Println("Error analyzing program: ", err)
+				os.Exit(1)
+			}
+
+			// Build the semantic table
+			
 
 		},
 	}

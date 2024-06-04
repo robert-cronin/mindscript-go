@@ -1,0 +1,10 @@
+{
+    "cSpell.words": [
+        "mindcript"
+    ],
+    "docwriter.style": "Google",
+    "licenser.customHeader": "license.boilerplate.txt",
+    "licenser.author": "Robert Cronin",
+    "licenser.useSingleLineStyle": false,
+    "licenser.useSPDXLicenseFormat": false
+}
