@@ -66,8 +66,8 @@ type Identifier struct {
 
 func (i *Identifier) expressionNode() {}
 
-// Agent represents an agent declaration
-type Agent struct {
+// AgentStatement represents an agent declaration
+type AgentStatement struct {
 	BaseNode
 	Name         *Identifier
 	Goal         *Goal
@@ -76,7 +76,7 @@ type Agent struct {
 	Functions    []*Function
 }
 
-func (a *Agent) statementNode() {}
+func (a *AgentStatement) statementNode() {}
 
 // Goal represents the agent's goal
 type Goal struct {

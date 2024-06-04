@@ -58,12 +58,12 @@ func (st *SymbolTable) CheckVariableType(name string, expectedType string) error
 	return nil
 }
 
-func Analyze(program *parser.Program) error {
+func Analyse(program *parser.Program) error {
 	st := NewSymbolTable()
 
 	for _, stmt := range program.Statements {
 		switch stmt := stmt.(type) {
-		case *parser.VarStatement:
+		case *parser.AgentStatement:
 			// TODO: support other types
 			err := st.DeclareVariable(stmt.Name.Value, "int")
 			if err != nil {

@@ -11,7 +11,20 @@
             "mode": "debug",
             "program": "${workspaceRoot}",
             "env": {},
-            "args": ["-i", "${workspaceFolder}/examples/example.ms"],
+            "args": ["-i", "${input:exampleFile}"],
+        }
+    ],
+    "inputs": [
+        {
+            "id": "exampleFile",
+            "type": "pickString",
+            "description": "Please select an example file",
+            "options": [
+                "${workspaceFolder}/examples/DataProcessor.ms",
+                "${workspaceFolder}/examples/DataAnalyser.ms",
+                "${workspaceFolder}/examples/MultiAgent.ms",
+            ],
+            "default": "${workspaceFolder}/examples/DataProcessor.ms"
         }
     ]
 }

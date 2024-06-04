@@ -65,15 +65,12 @@ func main() {
 			program := p.ParseProgram()
 			// fmt.Println(program.Statements)
 
-			// Analyze the program
-			err = semantic.Analyze(program)
+			// Analyse the program
+			err = semantic.Analyse(program)
 			if err != nil {
 				fmt.Println("Error analyzing program: ", err)
 				os.Exit(1)
 			}
-
-			// Build the semantic table
-			
 
 		},
 	}

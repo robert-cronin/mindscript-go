@@ -84,8 +84,8 @@ func (p *Parser) parseStatement() Statement {
 	}
 }
 
-func (p *Parser) parseAgentStatement() (*Agent, error) {
-	stmt := &Agent{}
+func (p *Parser) parseAgentStatement() (*AgentStatement, error) {
+	stmt := &AgentStatement{}
 	stmt.Token = p.curToken
 
 	if !p.expectPeek(lexer.IDENT) {
@@ -567,7 +567,6 @@ func (p *Parser) parseReturnStatement() *ReturnStatement {
 
 	return stmt
 }
-
 
 func (p *Parser) curTokenIs(t lexer.TokenType) bool {
 	return p.curToken.Type == t
