@@ -17,6 +17,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -25,6 +26,14 @@ import (
 	"github.com/robert-cronin/mindscript-go/pkg/semantic"
 	"github.com/spf13/cobra"
 )
+
+func dumpProgramToJson(program *parser.Program) (string, error) {
+	jsonData, err := json.MarshalIndent(program, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return string(jsonData), nil
+}
 
 func main() {
 	var inputFile string
@@ -66,11 +75,29 @@ func main() {
 			// fmt.Println(program.Statements)
 
 			// Analyse the program
-			err = semantic.Analyse(program)
+			st := semantic.NewSymbolTable(l)
+			err = st.Analyse(program)
 			if err != nil {
 				fmt.Println("Error analyzing program: ", err)
 				os.Exit(1)
 			}
+
+			jsonOutput, err := dumpProgramToJson(program)
+			if err != nil {
+				fmt.Println("Error dumping program to JSON: ", err)
+				os.Exit(1)
+			}
+
+			// Write output to file
+			jsonDumpFile := outputFile + ".json"
+			err = os.WriteFile(jsonDumpFile, []byte(jsonOutput), 0644)
+			if err != nil {
+				fmt.Println("Error writing JSON dump file: ", err)
+				os.Exit(1)
+			}
+
+			// Finished
+			fmt.Println("Finished")
 
 		},
 	}
@@ -78,5 +105,9 @@ func main() {
 	rootCmd.PersistentFlags().StringVarP(&inputFile, "input", "i", "", "Input file")
 	rootCmd.PersistentFlags().StringVarP(&outputFile, "output", "o", "", "Output file")
 
-	rootCmd.Execute()
+	err := rootCmd.Execute()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }

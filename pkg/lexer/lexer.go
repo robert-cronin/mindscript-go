@@ -18,6 +18,7 @@
 package lexer
 
 import (
+	"strings"
 	"unicode"
 )
 
@@ -79,12 +80,6 @@ var keywords = map[string]TokenType{
 	"bool":         BOOL,
 	"return":       RETURN,
 }
-var dataTypes = map[string]TokenType{
-	"int":    INT,
-	"float":  FLOAT,
-	"string": STRING,
-	"bool":   BOOL,
-}
 
 type Token struct {
 	Type    TokenType
@@ -97,6 +92,16 @@ type Lexer struct {
 	position     int
 	readPosition int
 	ch           byte
+}
+
+// Line gets the line number of the provided token
+func (l *Lexer) Line(tok Token) int {
+	return 1 + strings.Count(l.Prefix(tok.Loc), "\n")
+}
+
+// Column gets the column number of the provided token
+func (l *Lexer) Column(tok Token) int {
+	return 1 + strings.LastIndex(l.Prefix(tok.Loc), "\n")
 }
 
 func New(input string) *Lexer {
