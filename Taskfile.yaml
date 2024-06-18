@@ -37,7 +37,7 @@ tasks:
     deps:
       - task: build
     cmds:
-      - ./bin/msc -i ./examples/DataAnalyser.ms
+      - ./bin/msc -i ./examples/SimpleAgent.ms
 
   debug:
     desc: "Build with debug flags and run with Delve debugger"

@@ -97,8 +97,7 @@ func main() {
 			}
 
 			// Finished
-			fmt.Println("Finished")
-
+			fmt.Println("msc: Finished")
 		},
 	}
 

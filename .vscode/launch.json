@@ -11,7 +11,10 @@
             "mode": "debug",
             "program": "${workspaceRoot}",
             "env": {},
-            "args": ["-i", "${input:exampleFile}"],
+            "args": [
+                "-i",
+                "${input:exampleFile}"
+            ],
         }
     ],
     "inputs": [
@@ -20,6 +23,7 @@
             "type": "pickString",
             "description": "Please select an example file",
             "options": [
+                "${workspaceFolder}/examples/SimpleAgent.ms",
                 "${workspaceFolder}/examples/DataProcessor.ms",
                 "${workspaceFolder}/examples/DataAnalyser.ms",
                 "${workspaceFolder}/examples/MultiAgent.ms",
