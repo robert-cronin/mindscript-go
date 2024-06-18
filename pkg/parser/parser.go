@@ -22,6 +22,7 @@ import (
 	"strconv"
 
 	"github.com/robert-cronin/mindscript-go/pkg/lexer"
+	"github.com/robert-cronin/mindscript-go/pkg/semantic"
 )
 
 type Parser struct {
@@ -29,10 +30,15 @@ type Parser struct {
 
 	curToken  lexer.Token
 	peekToken lexer.Token
+
+	symbols *semantic.SymbolTable
 }
 
 func New(l *lexer.Lexer) *Parser {
-	p := &Parser{l: l}
+	p := &Parser{
+		l:       l,
+		symbols: semantic.NewSymbolTable(),
+	}
 
 	// Read two tokens, so curToken and peekToken are both set
 	p.nextToken()
