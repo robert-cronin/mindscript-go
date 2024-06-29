@@ -34,18 +34,28 @@ func (st *SymbolTable) Analyse(program *parser.Program) error {
 
 // Initialise the system functions like log, syscall, and exec
 func (st *SymbolTable) initSystemFunctions() {
-	st.DeclareFunction("log", FunctionSignature{
+	var err error
+	err = st.DeclareFunction("log", FunctionSignature{
 		Arguments:  []string{"string"},
 		ReturnType: "void",
 	})
-	st.DeclareFunction("syscall", FunctionSignature{
+	if err != nil {
+		fmt.Printf("Could not declare 'log' function: %s\n", err)
+	}
+	err = st.DeclareFunction("syscall", FunctionSignature{
 		Arguments:  []string{"string", "string"},
 		ReturnType: "void",
 	})
-	st.DeclareFunction("exec", FunctionSignature{
+	if err != nil {
+		fmt.Printf("Could not declare 'syscall' function: %s\n", err)
+	}
+	err = st.DeclareFunction("exec", FunctionSignature{
 		Arguments:  []string{"string", "string"},
 		ReturnType: "string",
 	})
+	if err != nil {
+		fmt.Printf("Could not declare 'exec' function: %s\n", err)
+	}
 }
 
 func (st *SymbolTable) analyseStatement(stmt parser.Statement) error {
