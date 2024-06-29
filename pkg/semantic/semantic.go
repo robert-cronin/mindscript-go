@@ -32,7 +32,7 @@ func (st *SymbolTable) Analyse(program *parser.Program) error {
 	return nil
 }
 
-// Initialise the system functions like log and syscall
+// Initialise the system functions like log, syscall, and exec
 func (st *SymbolTable) initSystemFunctions() {
 	st.DeclareFunction("log", FunctionSignature{
 		Arguments:  []string{"string"},
@@ -41,6 +41,10 @@ func (st *SymbolTable) initSystemFunctions() {
 	st.DeclareFunction("syscall", FunctionSignature{
 		Arguments:  []string{"string", "string"},
 		ReturnType: "void",
+	})
+	st.DeclareFunction("exec", FunctionSignature{
+		Arguments:  []string{"string", "string"},
+		ReturnType: "string",
 	})
 }
 
@@ -147,6 +151,11 @@ func (st *SymbolTable) analyseExpression(expr parser.Expression) error {
 				return fmt.Errorf("line %d: type mismatch for argument %d: expected %s but got %s", st.l.Line(e.Token), i+1, funcSig.Arguments[i], argType)
 			}
 		}
+	case *parser.IntegerLiteral, *parser.FloatLiteral, *parser.StringLiteral, *parser.BooleanLiteral:
+		// These literal types are inherently valid, no further analysis needed
+		return nil
+	default:
+		return fmt.Errorf("unsupported expression type: %T", e)
 	}
 	return nil
 }
@@ -191,6 +200,7 @@ func (st *SymbolTable) getExpressionType(expr parser.Expression) (string, error)
 			return "", err
 		}
 		return funcSig.ReturnType, nil
+	default:
+		return "", fmt.Errorf("unknown expression type: %T", e)
 	}
-	return "", errors.New("unknown expression type")
 }

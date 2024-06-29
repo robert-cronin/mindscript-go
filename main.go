@@ -21,9 +21,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/robert-cronin/mindscript-go/pkg/codegen"
 	"github.com/robert-cronin/mindscript-go/pkg/lexer"
 	"github.com/robert-cronin/mindscript-go/pkg/parser"
 	"github.com/robert-cronin/mindscript-go/pkg/semantic"
+	"github.com/robert-cronin/mindscript-go/pkg/vm"
 	"github.com/spf13/cobra"
 )
 
@@ -81,6 +83,13 @@ func main() {
 				fmt.Println("Error analyzing program: ", err)
 				os.Exit(1)
 			}
+
+			// Generate bytecode
+			instructions := codegen.GenerateBytecode(program, st)
+
+			// Run VM
+			virtualMachine := vm.New(instructions)
+			virtualMachine.Run()
 
 			jsonOutput, err := dumpProgramToJson(program)
 			if err != nil {
