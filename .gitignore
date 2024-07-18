@@ -1,3 +1,4 @@
 bin/
 __debug*
 tmp
+examples/*.json

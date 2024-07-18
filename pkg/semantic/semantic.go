@@ -17,8 +17,8 @@
 package semantic
 
 import (
-	"errors"
 	"fmt"
+
 	"github.com/robert-cronin/mindscript-go/pkg/parser"
 )
 
@@ -200,7 +200,7 @@ func (st *SymbolTable) getExpressionType(expr parser.Expression) (string, error)
 			return "", err
 		}
 		if leftType != rightType {
-			return "", errors.New("type mismatch in infix expression")
+			return "", fmt.Errorf("type mismatch in infix expression: %s != %s", leftType, rightType)
 		}
 		return leftType, nil
 	case *parser.CallExpression:

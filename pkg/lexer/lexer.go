@@ -20,6 +20,8 @@ package lexer
 import (
 	"strings"
 	"unicode"
+
+	"go.uber.org/zap"
 )
 
 type TokenType string
@@ -88,6 +90,7 @@ type Token struct {
 }
 
 type Lexer struct {
+	logger       *zap.Logger
 	input        string
 	position     int
 	readPosition int
@@ -105,7 +108,11 @@ func (l *Lexer) Column(tok Token) int {
 }
 
 func New(input string) *Lexer {
-	l := &Lexer{input: input}
+	logger, err := zap.NewProduction()
+	if err != nil {
+		panic("Failed to initialize Zap logger: " + err.Error())
+	}
+	l := &Lexer{logger: logger, input: input}
 	l.readChar()
 	return l
 }

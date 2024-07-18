@@ -18,7 +18,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 
 	"github.com/robert-cronin/mindscript-go/pkg/codegen"
@@ -27,7 +26,19 @@ import (
 	"github.com/robert-cronin/mindscript-go/pkg/semantic"
 	"github.com/robert-cronin/mindscript-go/pkg/vm"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
+
+var logger *zap.Logger
+
+func init() {
+	var err error
+	logger, err = zap.NewProduction()
+	if err != nil {
+		panic("Failed to initialize Zap logger: " + err.Error())
+	}
+	defer logger.Sync()
+}
 
 func dumpProgramToJson(program *parser.Program) (string, error) {
 	jsonData, err := json.MarshalIndent(program, "", "  ")
@@ -44,43 +55,35 @@ func main() {
 	var rootCmd = &cobra.Command{
 		Use: "mindcript",
 		Run: func(cmd *cobra.Command, args []string) {
-
 			// Check if inputFile and outputFile are provided
 			if inputFile == "" {
-				fmt.Println("Please provide input file")
+				logger.Error("Input file not provided")
 				os.Exit(1)
 			}
 			if outputFile == "" {
 				// default output file, strips the extension
 				outputFile = inputFile[:len(inputFile)-3] + ".mind"
 			}
-			fmt.Println("Input file: ", inputFile)
-			fmt.Println("Output file: ", outputFile)
+			logger.Info("Processing files", zap.String("input", inputFile), zap.String("output", outputFile))
 
 			// Read input file
 			input, err := os.ReadFile(inputFile)
 			if err != nil {
-				fmt.Println("Error reading input file: ", err)
+				logger.Error("Error reading input file", zap.Error(err))
 				os.Exit(1)
 			}
 
 			inputStr := string(input)
 
 			l := lexer.New(inputStr)
-			// for tok := l.NextToken(); tok.Type != lexer.EOF; tok = l.NextToken() {
-			// 	fmt.Printf("%+v\n", tok)
-			// }
-
-			// Parse the input
 			p := parser.New(l)
 			program := p.ParseProgram()
-			// fmt.Println(program.Statements)
 
 			// Analyse the program
 			st := semantic.NewSymbolTable(l)
 			err = st.Analyse(program)
 			if err != nil {
-				fmt.Println("Error analyzing program: ", err)
+				logger.Error("Error analyzing program", zap.Error(err))
 				os.Exit(1)
 			}
 
@@ -93,7 +96,7 @@ func main() {
 
 			jsonOutput, err := dumpProgramToJson(program)
 			if err != nil {
-				fmt.Println("Error dumping program to JSON: ", err)
+				logger.Error("Error dumping program to JSON", zap.Error(err))
 				os.Exit(1)
 			}
 
@@ -101,12 +104,12 @@ func main() {
 			jsonDumpFile := outputFile + ".json"
 			err = os.WriteFile(jsonDumpFile, []byte(jsonOutput), 0644)
 			if err != nil {
-				fmt.Println("Error writing JSON dump file: ", err)
+				logger.Error("Error writing JSON dump file", zap.Error(err))
 				os.Exit(1)
 			}
 
 			// Finished
-			fmt.Println("msc: Finished")
+			logger.Info("msc: Finished")
 		},
 	}
 
@@ -115,7 +118,7 @@ func main() {
 
 	err := rootCmd.Execute()
 	if err != nil {
-		fmt.Println(err)
+		logger.Error("Error executing command", zap.Error(err))
 		os.Exit(1)
 	}
 }

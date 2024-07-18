@@ -18,6 +18,8 @@ package vm
 
 import (
 	"fmt"
+
+	"go.uber.org/zap"
 )
 
 type Opcode int
@@ -95,6 +97,7 @@ type Instruction struct {
 }
 
 type VM struct {
+	logger       *zap.Logger
 	stack        []interface{}
 	locals       []interface{}
 	pc           int
@@ -104,7 +107,12 @@ type VM struct {
 }
 
 func New(instructions []Instruction) *VM {
+	logger, err := zap.NewProduction()
+	if err != nil {
+		panic("Failed to initialize Zap logger: " + err.Error())
+	}
 	return &VM{
+		logger:       logger,
 		stack:        make([]interface{}, 0),
 		locals:       make([]interface{}, 256),
 		instructions: instructions,
@@ -135,7 +143,7 @@ func (vm *VM) step() {
 	case OpPop:
 		vm.popStack()
 	case OpPrint:
-		fmt.Println(vm.popStack())
+		vm.logger.Debug("", zap.Any("value", vm.popStack()))
 	case OpSetLocal:
 		value := vm.popStack()
 		vm.locals[instr.Operand] = value
@@ -158,45 +166,45 @@ func (vm *VM) step() {
 		vm.running = false
 	case OpCreateAgent:
 		// TODO: Implement agent creation logic
-		fmt.Println("Creating agent")
+		vm.logger.Debug("Creating agent")
 	case OpSetAgentGoal:
 		// TODO: Implement setting agent goal logic
-		fmt.Println("Setting agent goal")
+		vm.logger.Debug("Setting agent goal")
 	case OpAddAgentCapability:
 		// TODO: Implement adding agent capability logic
-		fmt.Println("Adding agent capability")
+		vm.logger.Debug("Adding agent capability")
 	case OpCreateEventHandler:
 		// TODO: Implement event handler creation logic
-		fmt.Println("Creating event handler")
+		vm.logger.Debug("Creating event handler")
 	case OpSetEventHandlerEvent:
 		// TODO: Implement setting event handler event logic
-		fmt.Println("Setting event handler event")
+		vm.logger.Debug("Setting event handler event")
 	case OpAddAgentEventHandler:
 		// TODO: Implement adding event handler to agent logic
-		fmt.Println("Adding event handler to agent")
+		vm.logger.Debug("Adding event handler to agent")
 	case OpCreateFunction:
 		// TODO: Implement function creation logic
-		fmt.Println("Creating function")
+		vm.logger.Debug("Creating function")
 	case OpAddFunctionArgument:
 		// TODO: Implement adding function argument logic
-		fmt.Println("Adding function argument")
+		vm.logger.Debug("Adding function argument")
 	case OpAddAgentFunction:
 		// TODO: Implement adding function to agent logic
-		fmt.Println("Adding function to agent")
+		vm.logger.Debug("Adding function to agent")
 	case OpSyscall:
 		// TODO: Implement syscall logic
-		fmt.Println("Executing syscall")
+		vm.logger.Debug("Executing syscall")
 	case OpExec:
 		// TODO: Implement exec logic
-		fmt.Println("Executing external command")
+		vm.logger.Debug("Executing external command")
 	case OpLog:
 		// TODO: Implement log logic
-		fmt.Println("Logging:", vm.popStack())
-    case OpPushString:
-        // Implement string pushing logic
-        stringValue := vm.getStringConstant(instr.Operand)
-        vm.stack = append(vm.stack, stringValue)
-        fmt.Println("Pushing string:", stringValue)
+		vm.logger.Debug("Logging:", zap.Any("value", vm.popStack()))
+	case OpPushString:
+		// Implement string pushing logic
+		stringValue := vm.getStringConstant(instr.Operand)
+		vm.stack = append(vm.stack, stringValue)
+		vm.logger.Debug("Pushing string:", zap.String("value", stringValue))
 	default:
 		fmt.Printf("Error: Unknown opcode %d\n", instr.Opcode)
 		vm.running = false
@@ -207,7 +215,7 @@ func (vm *VM) step() {
 
 func (vm *VM) getStringConstant(index int) string {
 	// TODO: Implement string constant retrieval logic
-    return fmt.Sprintf("String constant %d", index)
+	return fmt.Sprintf("String constant %d", index)
 }
 
 // executeBinaryOp executes a binary operation

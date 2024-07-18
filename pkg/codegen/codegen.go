@@ -23,9 +23,11 @@ import (
 	"github.com/robert-cronin/mindscript-go/pkg/parser"
 	"github.com/robert-cronin/mindscript-go/pkg/semantic"
 	"github.com/robert-cronin/mindscript-go/pkg/vm"
+	"go.uber.org/zap"
 )
 
 type CodeGenerator struct {
+	logger           *zap.Logger
 	instructions     []vm.Instruction
 	symbolTable      *semantic.SymbolTable
 	functions        map[string]int
@@ -36,7 +38,12 @@ type CodeGenerator struct {
 }
 
 func NewCodeGenerator(symbolTable *semantic.SymbolTable) *CodeGenerator {
+	logger, err := zap.NewProduction()
+	if err != nil {
+		panic("Failed to initialize Zap logger: " + err.Error())
+	}
 	cg := &CodeGenerator{
+		logger:          logger,
 		instructions:    []vm.Instruction{},
 		symbolTable:     symbolTable,
 		functions:       make(map[string]int),
@@ -149,7 +156,7 @@ func (cg *CodeGenerator) generateStatement(stmt parser.Statement) {
 		cg.emit(vm.OpReturn, 0)
 	default:
 		// Handle unknown statement types
-		panic(fmt.Sprintf("Unsupported statement type: %T", s))
+		cg.logger.Panic("Unsupported statement type", zap.String("type", fmt.Sprintf("%T", s)))
 	}
 }
 
@@ -171,7 +178,7 @@ func (cg *CodeGenerator) generateExpression(expr parser.Expression) {
 	case *parser.IdentifierLiteral:
 		varIndex, exists := cg.symbols[e.Value]
 		if !exists {
-			panic(fmt.Sprintf("Undefined variable: %s", e.Value))
+			cg.logger.Panic("Undefined variable", zap.String("variable", e.Value))
 		}
 		cg.emit(vm.OpGetLocal, varIndex)
 	case *parser.InfixExpression:
@@ -187,7 +194,7 @@ func (cg *CodeGenerator) generateExpression(expr parser.Expression) {
 		case lexer.SLASH:
 			cg.emit(vm.OpDiv, 0)
 		default:
-			panic(fmt.Sprintf("Unknown operator: %s", e.Operator.Literal))
+			cg.logger.Panic("Unknown operator", zap.String("operator", e.Operator.Literal))
 		}
 	case *parser.CallExpression:
 		for _, arg := range e.Arguments {
@@ -199,12 +206,12 @@ func (cg *CodeGenerator) generateExpression(expr parser.Expression) {
 		} else {
 			funcIndex, exists := cg.functions[funcName]
 			if !exists {
-				panic(fmt.Sprintf("Undefined function: %s", funcName))
+				cg.logger.Panic("Undefined function", zap.String("function", funcName))
 			}
 			cg.emit(vm.OpCall, funcIndex)
 		}
 	default:
-		panic(fmt.Sprintf("Unsupported expression type: %T", e))
+		cg.logger.Panic("Unsupported expression type", zap.String("type", fmt.Sprintf("%T", e)))
 	}
 }
 

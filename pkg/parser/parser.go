@@ -18,22 +18,28 @@ package parser
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 
 	"github.com/robert-cronin/mindscript-go/pkg/lexer"
+	"go.uber.org/zap"
 )
 
 type Parser struct {
-	l *lexer.Lexer
+	logger *zap.Logger
+	l      *lexer.Lexer
 
 	curToken  lexer.Token
 	peekToken lexer.Token
 }
 
 func New(l *lexer.Lexer) *Parser {
+	logger, err := zap.NewProduction()
+	if err != nil {
+		panic("Failed to initialize Zap logger: " + err.Error())
+	}
 	p := &Parser{
-		l: l,
+		logger: logger,
+		l:      l,
 	}
 
 	// Read two tokens, so curToken and peekToken are both set
@@ -69,7 +75,7 @@ func (p *Parser) parseStatement() Statement {
 		// TODO: make err handling like this everywhere else
 		agent, err := p.parseAgentStatement()
 		if err != nil {
-			fmt.Println("Error parsing agent statement: ", err)
+			p.logger.Error("Error parsing agent statement", zap.Error(err))
 			return nil
 		}
 		return agent
@@ -163,7 +169,7 @@ func (p *Parser) parseCapabilities() *Capabilities {
 		} else if p.curToken.Type == lexer.RBRACKET {
 			break
 		} else {
-			fmt.Println("Error parsing capabilities")
+			p.logger.Error("Error parsing capabilities")
 			return nil
 		}
 	}
@@ -190,7 +196,7 @@ Loop:
 		case lexer.RBRACE:
 			break Loop
 		default:
-			fmt.Println("Error parsing behavior")
+			p.logger.Error("Error parsing behavior")
 			return nil
 		}
 	}
@@ -212,7 +218,7 @@ func (p *Parser) parseEventHandler() *EventHandler {
 	eventHandler.Event.Name.Value = p.curToken.Literal
 
 	if !p.expectPeek(lexer.LBRACE) {
-		fmt.Println("Error parsing event handler")
+		p.logger.Error("Error parsing event handler")
 		return nil
 	}
 
@@ -293,7 +299,7 @@ func (p *Parser) parseDataType() *DataType {
 		p.nextToken()
 		dataType.Token = p.curToken
 	default:
-		fmt.Println("Error parsing data type")
+		p.logger.Error("Error parsing data type")
 		return nil
 	}
 
@@ -480,7 +486,7 @@ func (p *Parser) parseIntegerLiteral() *IntegerLiteral {
 
 	value, err := strconv.ParseInt(p.curToken.Literal, 0, 64)
 	if err != nil {
-		fmt.Println("Error parsing integer literal")
+		p.logger.Error("Error parsing integer literal", zap.Error(err))
 		return nil
 	}
 
@@ -494,7 +500,7 @@ func (p *Parser) parseFloatLiteral() *FloatLiteral {
 
 	value, err := strconv.ParseFloat(p.curToken.Literal, 64)
 	if err != nil {
-		fmt.Println("Error parsing float literal")
+		p.logger.Error("Error parsing float literal", zap.Error(err))
 		return nil
 	}
 
@@ -518,7 +524,7 @@ func (p *Parser) parseBooleanLiteral() *BooleanLiteral {
 
 	value, err := strconv.ParseBool(p.curToken.Literal)
 	if err != nil {
-		fmt.Println("Error parsing boolean literal")
+		p.logger.Error("Error parsing boolean literal", zap.Error(err))
 		return nil
 	}
 
@@ -548,7 +554,7 @@ func (p *Parser) parseReturnDataType() *DataType {
 		p.nextToken()
 		dataType.Token = p.curToken
 	default:
-		fmt.Println("Error parsing return data type")
+		p.logger.Error("Error parsing return data type")
 		return nil
 	}
 
