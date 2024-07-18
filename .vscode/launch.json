@@ -13,7 +13,9 @@
             "env": {},
             "args": [
                 "-i",
-                "${input:exampleFile}"
+                "${input:exampleFile}",
+                "-l",
+                "info"
             ],
         }
     ],

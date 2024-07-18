@@ -18,28 +18,28 @@ package parser
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/robert-cronin/mindscript-go/pkg/lexer"
+	"github.com/robert-cronin/mindscript-go/pkg/logger"
 	"go.uber.org/zap"
 )
 
 type Parser struct {
-	logger *zap.Logger
-	l      *lexer.Lexer
+	l *lexer.Lexer
 
 	curToken  lexer.Token
 	peekToken lexer.Token
+
+	errors []string
 }
 
 func New(l *lexer.Lexer) *Parser {
-	logger, err := zap.NewProduction()
-	if err != nil {
-		panic("Failed to initialize Zap logger: " + err.Error())
-	}
 	p := &Parser{
-		logger: logger,
-		l:      l,
+		l: l,
+
+		errors: []string{},
 	}
 
 	// Read two tokens, so curToken and peekToken are both set
@@ -47,6 +47,20 @@ func New(l *lexer.Lexer) *Parser {
 	p.nextToken()
 
 	return p
+}
+
+func (p *Parser) Errors() []string {
+	return p.errors
+}
+
+func (p *Parser) addError(msg string) {
+	p.errors = append(p.errors, msg)
+}
+
+func (p *Parser) peekError(expectedType lexer.TokenType) {
+	msg := fmt.Sprintf("Expected next token to be %s, got %s instead",
+		expectedType, p.peekToken.Type)
+	p.addError(msg)
 }
 
 func (p *Parser) nextToken() {
@@ -75,7 +89,7 @@ func (p *Parser) parseStatement() Statement {
 		// TODO: make err handling like this everywhere else
 		agent, err := p.parseAgentStatement()
 		if err != nil {
-			p.logger.Error("Error parsing agent statement", zap.Error(err))
+			logger.Log.Error("Error parsing agent statement", zap.Error(err))
 			return nil
 		}
 		return agent
@@ -88,6 +102,8 @@ func (p *Parser) parseStatement() Statement {
 	case lexer.FUNCTION:
 		return p.parseFunction()
 	default:
+		msg := fmt.Sprintf("Unexpected token %s encountered", p.curToken.Type)
+		p.addError(msg)
 		return nil
 	}
 }
@@ -169,7 +185,7 @@ func (p *Parser) parseCapabilities() *Capabilities {
 		} else if p.curToken.Type == lexer.RBRACKET {
 			break
 		} else {
-			p.logger.Error("Error parsing capabilities")
+			logger.Log.Error("Error parsing capabilities")
 			return nil
 		}
 	}
@@ -196,7 +212,7 @@ Loop:
 		case lexer.RBRACE:
 			break Loop
 		default:
-			p.logger.Error("Error parsing behavior")
+			logger.Log.Error("Error parsing behavior")
 			return nil
 		}
 	}
@@ -218,7 +234,7 @@ func (p *Parser) parseEventHandler() *EventHandler {
 	eventHandler.Event.Name.Value = p.curToken.Literal
 
 	if !p.expectPeek(lexer.LBRACE) {
-		p.logger.Error("Error parsing event handler")
+		logger.Log.Error("Error parsing event handler")
 		return nil
 	}
 
@@ -299,7 +315,7 @@ func (p *Parser) parseDataType() *DataType {
 		p.nextToken()
 		dataType.Token = p.curToken
 	default:
-		p.logger.Error("Error parsing data type")
+		logger.Log.Error("Error parsing data type")
 		return nil
 	}
 
@@ -486,7 +502,7 @@ func (p *Parser) parseIntegerLiteral() *IntegerLiteral {
 
 	value, err := strconv.ParseInt(p.curToken.Literal, 0, 64)
 	if err != nil {
-		p.logger.Error("Error parsing integer literal", zap.Error(err))
+		logger.Log.Error("Error parsing integer literal", zap.Error(err))
 		return nil
 	}
 
@@ -500,7 +516,7 @@ func (p *Parser) parseFloatLiteral() *FloatLiteral {
 
 	value, err := strconv.ParseFloat(p.curToken.Literal, 64)
 	if err != nil {
-		p.logger.Error("Error parsing float literal", zap.Error(err))
+		logger.Log.Error("Error parsing float literal", zap.Error(err))
 		return nil
 	}
 
@@ -524,7 +540,7 @@ func (p *Parser) parseBooleanLiteral() *BooleanLiteral {
 
 	value, err := strconv.ParseBool(p.curToken.Literal)
 	if err != nil {
-		p.logger.Error("Error parsing boolean literal", zap.Error(err))
+		logger.Log.Error("Error parsing boolean literal", zap.Error(err))
 		return nil
 	}
 
@@ -554,7 +570,7 @@ func (p *Parser) parseReturnDataType() *DataType {
 		p.nextToken()
 		dataType.Token = p.curToken
 	default:
-		p.logger.Error("Error parsing return data type")
+		logger.Log.Error("Error parsing return data type")
 		return nil
 	}
 
@@ -588,9 +604,9 @@ func (p *Parser) expectPeek(t lexer.TokenType) bool {
 	if p.peekTokenIs(t) {
 		p.nextToken()
 		return true
-	} else {
-		return false
 	}
+	p.peekError(t)
+	return false
 }
 
 func (p *Parser) peekPrecedence() int {

@@ -340,3 +340,10 @@ func (vm *VM) div(a, b interface{}) interface{} {
 	}
 	panic(fmt.Sprintf("Unsupported types for division: %T and %T", a, b))
 }
+
+func (vm *VM) GetLastResult() interface{} {
+	if len(vm.stack) > 0 {
+		return vm.stack[len(vm.stack)-1]
+	}
+	return nil
+}
