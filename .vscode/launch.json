@@ -12,6 +12,7 @@
             "program": "${workspaceRoot}",
             "env": {},
             "args": [
+                "build",
                 "-i",
                 "${input:exampleFile}",
                 "-l",
