@@ -18,7 +18,10 @@ package vm
 
 import (
 	"fmt"
+	"os/exec"
+	"strings"
 
+	"github.com/robert-cronin/mindscript-go/pkg/logger"
 	"go.uber.org/zap"
 )
 
@@ -97,116 +100,149 @@ type Instruction struct {
 }
 
 type VM struct {
-	logger       *zap.Logger
-	stack        []interface{}
-	locals       []interface{}
-	pc           int
-	instructions []Instruction
-	running      bool
-	callStack    []int
+	stack           []interface{}
+	locals          []interface{}
+	pc              int
+	instructions    []Instruction
+	running         bool
+	callStack       []int
+	stringConstants []string
 }
 
 func New(instructions []Instruction) *VM {
-	logger, err := zap.NewProduction()
-	if err != nil {
-		panic("Failed to initialize Zap logger: " + err.Error())
-	}
 	return &VM{
-		logger:       logger,
-		stack:        make([]interface{}, 0),
-		locals:       make([]interface{}, 256),
-		instructions: instructions,
-		running:      true,
-		callStack:    make([]int, 0),
+		stack:           make([]interface{}, 0),
+		locals:          make([]interface{}, 256),
+		instructions:    instructions,
+		running:         true,
+		callStack:       make([]int, 0),
+		stringConstants: make([]string, 0),
 	}
 }
 
 // Run starts the VM and executes the bytecode instructions
 func (vm *VM) Run() {
+	logger.Log.Info("Starting VM execution")
 	for vm.running {
 		vm.step()
 	}
+	logger.Log.Info("VM execution completed")
 }
 
 func (vm *VM) step() {
 	if vm.pc >= len(vm.instructions) {
 		vm.running = false
+		logger.Log.Info("Reached end of instructions", zap.Int("pc", vm.pc))
 		return
 	}
 
 	instr := vm.instructions[vm.pc]
+	logger.Log.Debug("Executing instruction", zap.Int("pc", vm.pc), zap.Any("instruction", instr))
+
 	switch instr.Opcode {
 	case OpAdd, OpSub, OpMul, OpDiv:
 		vm.executeBinaryOp(instr.Opcode)
 	case OpPush:
 		vm.stack = append(vm.stack, instr.Operand)
+		logger.Log.Debug("Pushed value to stack", zap.Any("value", instr.Operand))
 	case OpPop:
-		vm.popStack()
+		value := vm.popStack()
+		logger.Log.Debug("Popped value from stack", zap.Any("value", value))
 	case OpPrint:
-		vm.logger.Debug("", zap.Any("value", vm.popStack()))
+		value := vm.popStack()
+		fmt.Println(value)
+		logger.Log.Debug("Printed value", zap.Any("value", value))
 	case OpSetLocal:
 		value := vm.popStack()
 		vm.locals[instr.Operand] = value
+		logger.Log.Debug("Set local variable", zap.Int("index", instr.Operand), zap.Any("value", value))
 	case OpGetLocal:
 		value := vm.locals[instr.Operand]
 		vm.stack = append(vm.stack, value)
+		logger.Log.Debug("Got local variable", zap.Int("index", instr.Operand), zap.Any("value", value))
 	case OpCall:
 		vm.callStack = append(vm.callStack, vm.pc+1)
 		vm.pc = instr.Operand
+		logger.Log.Debug("Function call", zap.Int("returnAddress", vm.pc+1), zap.Int("functionAddress", instr.Operand))
 		return
 	case OpReturn:
 		if len(vm.callStack) == 0 {
 			vm.running = false
+			logger.Log.Info("Return from main function, halting VM")
 			return
 		}
 		vm.pc = vm.callStack[len(vm.callStack)-1]
 		vm.callStack = vm.callStack[:len(vm.callStack)-1]
+		logger.Log.Debug("Function return", zap.Int("returnAddress", vm.pc))
 		return
 	case OpHalt:
 		vm.running = false
+		logger.Log.Info("Halt instruction encountered, stopping VM")
 	case OpCreateAgent:
-		// TODO: Implement agent creation logic
-		vm.logger.Debug("Creating agent")
+		logger.Log.Debug("Creating agent", zap.Int("agentIndex", instr.Operand))
+		// TODO: Implement actual agent creation logic
 	case OpSetAgentGoal:
-		// TODO: Implement setting agent goal logic
-		vm.logger.Debug("Setting agent goal")
+		goal := vm.popStack()
+		logger.Log.Debug("Setting agent goal", zap.Int("agentIndex", instr.Operand), zap.Any("goal", goal))
+		// TODO: Implement actual agent goal setting logic
 	case OpAddAgentCapability:
-		// TODO: Implement adding agent capability logic
-		vm.logger.Debug("Adding agent capability")
+		capability := vm.popStack()
+		logger.Log.Debug("Adding agent capability", zap.Int("agentIndex", instr.Operand), zap.Any("capability", capability))
+		// TODO: Implement actual agent capability adding logic
 	case OpCreateEventHandler:
-		// TODO: Implement event handler creation logic
-		vm.logger.Debug("Creating event handler")
+		logger.Log.Debug("Creating event handler", zap.Int("handlerIndex", instr.Operand))
+		// TODO: Implement actual event handler creation logic
 	case OpSetEventHandlerEvent:
-		// TODO: Implement setting event handler event logic
-		vm.logger.Debug("Setting event handler event")
+		event := vm.popStack()
+		logger.Log.Debug("Setting event handler event", zap.Int("handlerIndex", instr.Operand), zap.Any("event", event))
+		// TODO: Implement actual event handler event setting logic
 	case OpAddAgentEventHandler:
-		// TODO: Implement adding event handler to agent logic
-		vm.logger.Debug("Adding event handler to agent")
+		handlerIndex := vm.popStack()
+		logger.Log.Debug("Adding event handler to agent", zap.Int("agentIndex", instr.Operand), zap.Any("handlerIndex", handlerIndex))
+		// TODO: Implement actual logic to add event handler to agent
 	case OpCreateFunction:
-		// TODO: Implement function creation logic
-		vm.logger.Debug("Creating function")
+		logger.Log.Debug("Creating function", zap.Int("functionIndex", instr.Operand))
+		// TODO: Implement actual function creation logic
 	case OpAddFunctionArgument:
-		// TODO: Implement adding function argument logic
-		vm.logger.Debug("Adding function argument")
+		argName := vm.popStack()
+		logger.Log.Debug("Adding function argument", zap.Int("functionIndex", instr.Operand), zap.Any("argumentName", argName))
+		// TODO: Implement actual function argument adding logic
 	case OpAddAgentFunction:
-		// TODO: Implement adding function to agent logic
-		vm.logger.Debug("Adding function to agent")
+		functionIndex := vm.popStack()
+		logger.Log.Debug("Adding function to agent", zap.Int("agentIndex", instr.Operand), zap.Any("functionIndex", functionIndex))
+		// TODO: Implement actual logic to add function to agent
 	case OpSyscall:
-		// TODO: Implement syscall logic
-		vm.logger.Debug("Executing syscall")
+		command := vm.popStack().(string)
+		args := vm.popStack().(string)
+		logger.Log.Debug("Executing syscall", zap.String("command", command), zap.String("args", args))
+		cmd := exec.Command(command, strings.Split(args, " ")...)
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			logger.Log.Error("Syscall failed", zap.Error(err))
+		} else {
+			logger.Log.Debug("Syscall output", zap.String("output", string(output)))
+		}
 	case OpExec:
-		// TODO: Implement exec logic
-		vm.logger.Debug("Executing external command")
+		command := vm.popStack().(string)
+		args := vm.popStack().(string)
+		logger.Log.Debug("Executing external command", zap.String("command", command), zap.String("args", args))
+		cmd := exec.Command(command, strings.Split(args, " ")...)
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			logger.Log.Error("External command failed", zap.Error(err))
+		} else {
+			vm.stack = append(vm.stack, string(output))
+			logger.Log.Debug("External command output", zap.String("output", string(output)))
+		}
 	case OpLog:
-		// TODO: Implement log logic
-		vm.logger.Debug("Logging:", zap.Any("value", vm.popStack()))
+		message := vm.popStack()
+		logger.Log.Info("Log message", zap.Any("message", message))
 	case OpPushString:
-		// Implement string pushing logic
 		stringValue := vm.getStringConstant(instr.Operand)
 		vm.stack = append(vm.stack, stringValue)
-		vm.logger.Debug("Pushing string:", zap.String("value", stringValue))
+		logger.Log.Debug("Pushed string to stack", zap.String("value", stringValue))
 	default:
-		fmt.Printf("Error: Unknown opcode %d\n", instr.Opcode)
+		logger.Log.Error("Unknown opcode", zap.Int("opcode", int(instr.Opcode)))
 		vm.running = false
 	}
 
@@ -242,7 +278,9 @@ func (vm *VM) executeBinaryOp(opcode Opcode) {
 // popStack pops the top value from the stack
 func (vm *VM) popStack() interface{} {
 	if len(vm.stack) == 0 {
-		panic("Stack underflow")
+		logger.Log.Error("Attempted to pop from empty stack")
+		vm.running = false
+		return nil
 	}
 	value := vm.stack[len(vm.stack)-1]
 	vm.stack = vm.stack[:len(vm.stack)-1]
@@ -339,6 +377,11 @@ func (vm *VM) div(a, b interface{}) interface{} {
 		}
 	}
 	panic(fmt.Sprintf("Unsupported types for division: %T and %T", a, b))
+}
+
+func (vm *VM) AddStringConstant(s string) int {
+	vm.stringConstants = append(vm.stringConstants, s)
+	return len(vm.stringConstants) - 1
 }
 
 func (vm *VM) GetLastResult() interface{} {
